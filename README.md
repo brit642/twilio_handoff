@@ -217,8 +217,9 @@ twilio_handoff/
 │   ├── tool_config.yaml       # Toolset configuration guide
 │   ├── agent_instructions.md  # Agent instruction templates
 │   └── agent_instructions.xml # XML-formatted instructions
+├── docs/
+│   └── VOICE_HANDOFF_ARCHITECTURE.md  # Future voice implementation
 ├── SETUP_GUIDE.md        # Detailed setup instructions
-├── CLAUDE.md             # Project documentation
 └── README.md             # This file
 ```
 

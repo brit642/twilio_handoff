@@ -26,6 +26,7 @@ cxas_scrapi*.whl
 
 # Claude Code local settings
 .claude/
+CLAUDE.md
 
 # OS files
 .DS_Store
