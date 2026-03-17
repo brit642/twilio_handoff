@@ -1,0 +1,90 @@
+# CX Agent Studio Tool Configuration
+# Human Handoff Tool using OpenAPI Specification
+#
+# This file documents how to create the "Initiate Human Handoff" tool
+# in CX Agent Studio using the OpenAPI spec.
+
+tool_name: "Initiate Human Handoff"
+
+# Configuration for CX Agent Studio UI
+tool_configuration:
+  display_name: "Initiate Human Handoff"
+  description: |
+    Transfers the conversation to a human agent with full context.
+    Use this when the user explicitly requests to speak to a human,
+    or when the conversation requires human expertise.
+
+  # Tool type: OpenAPI
+  type: openapi
+
+  # OpenAPI specification URL (your deployed Cloud Run service)
+  openapi_spec_url: "https://twilio-warm-handoff-backend-689910341505.us-central1.run.app/openapi.yaml"
+
+  # Or paste the spec inline (alternative)
+  # openapi_spec: |
+  #   ... contents of flask_app/openapi.yaml ...
+
+  # Operation to use from the spec
+  operation_id: "initiateHumanHandoff"
+
+# Parameter mappings - how to populate the tool parameters
+parameter_mappings:
+  session_id:
+    source: "session"
+    path: "$session.id"
+    description: "Automatically populated from the current session"
+    required: true
+
+  user_id:
+    source: "session"
+    path: "$session.user_id"
+    description: "User identifier from session context (if available)"
+    required: false
+
+  issue_summary:
+    source: "agent_generated"
+    description: |
+      The agent should generate a brief summary of the user's issue
+      before calling this tool. Include:
+      - What the user is trying to accomplish
+      - Key details mentioned in the conversation
+      - Why a human agent is needed
+    required: false
+
+  transcript:
+    source: "conversation_history"
+    path: "$conversation.recent_messages"
+    format: "User: {user_message}\nAgent: {agent_message}\n"
+    max_turns: 10
+    description: "Recent conversation history"
+    required: false
+
+  channel_id:
+    source: "session"
+    path: "$session.channel_id"
+    description: "Twilio channel/conversation ID for routing"
+    required: false
+
+# Example tool invocation (for testing)
+example_invocation:
+  session_id: "session_abc123"
+  user_id: "user_456"
+  issue_summary: "User cannot reset their password and needs human assistance"
+  transcript: |
+    User: I forgot my password
+    Agent: I can help you reset your password. What email is associated with your account?
+    User: john@example.com
+    Agent: I'm sending a reset link to that email.
+    User: I never received the email, can I talk to a real person?
+    Agent: Of course, let me transfer you to a specialist.
+
+# Steps to create this tool in CX Agent Studio:
+# -------------------------------------------------
+# 1. Navigate to your Agent in CX Agent Studio
+# 2. Go to Tools > Create Tool
+# 3. Select "OpenAPI" as the tool type
+# 4. Enter the OpenAPI spec URL or paste the spec
+# 5. Select the "initiateHumanHandoff" operation
+# 6. Configure parameter mappings as shown above
+# 7. Save the tool
+# 8. Add the tool to your agent's available tools

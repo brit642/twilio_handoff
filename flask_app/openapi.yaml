@@ -1,0 +1,212 @@
+openapi: 3.0.0
+info:
+  title: Twilio Warm Handoff API
+  version: 2.0.0
+  description: |
+    API for initiating text-based warm handoffs from CX Agent Studio to human agents.
+
+    This API enables virtual agents to transfer conversations to human agents while
+    preserving full conversation context (transcript, issue summary). The human agent
+    receives all context before taking over, enabling a "warm" handoff experience.
+servers:
+  - url: https://twilio-warm-handoff-backend-689910341505.us-central1.run.app
+    description: Production server (Cloud Run)
+
+paths:
+  /:
+    get:
+      operationId: healthCheck
+      summary: Health Check
+      description: Returns the health status of the service.
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  service:
+                    type: string
+                    example: twilio-warm-handoff
+                  demo_mode:
+                    type: boolean
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /start_transfer:
+    post:
+      operationId: initiateHumanHandoff
+      summary: Initiate Human Handoff
+      description: |
+        Initiates a warm transfer to a human agent. The virtual agent should call
+        this endpoint when a handoff is needed.
+
+        The backend will notify the human agent system with the full conversation
+        context, enabling the human agent to continue the conversation seamlessly.
+
+        **What makes it "warm":** The human agent receives the conversation
+        transcript and issue summary before taking over, so they understand
+        the context without asking the user to repeat themselves.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - session_id
+              properties:
+                session_id:
+                  type: string
+                  description: |
+                    CX Agent Studio session identifier. This uniquely identifies
+                    the current conversation session.
+                  example: "session_abc123xyz"
+                user_id:
+                  type: string
+                  description: |
+                    User identifier if available (e.g., authenticated user ID,
+                    phone number, email).
+                  example: "user_12345"
+                issue_summary:
+                  type: string
+                  description: |
+                    AI-generated summary of the conversation and user's issue.
+                    This helps the human agent quickly understand the context.
+                  example: "User needs help resetting their password after being locked out of their account."
+                transcript:
+                  type: string
+                  description: |
+                    Recent conversation history between the user and virtual agent.
+                    Format: "User: message\nAgent: response\n..."
+                  example: |
+                    User: Hi, I can't log into my account
+                    Agent: I'm sorry to hear that. Can you tell me what happens when you try to log in?
+                    User: It says my password is wrong but I'm sure it's correct
+                    Agent: Let me transfer you to a specialist who can help reset your password.
+                channel_id:
+                  type: string
+                  description: |
+                    Twilio conversation or channel identifier. Used for routing
+                    the human agent to the correct conversation.
+                  example: "CH1234567890abcdef"
+      responses:
+        '200':
+          description: Handoff initiated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [success]
+                    example: success
+                  message:
+                    type: string
+                    example: "Warm handoff initiated - human agent notified"
+                  handoff_id:
+                    type: string
+                    description: Unique identifier for this handoff
+                    example: "handoff_session_abc123xyz_20260317143052"
+                  demo_mode:
+                    type: boolean
+                    description: Whether the service is running in demo mode
+        '400':
+          description: Invalid request (missing required fields)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error (webhook not configured)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
+          description: Failed to notify human agent system
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '504':
+          description: Timeout while notifying human agent system
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /handoff_status:
+    post:
+      operationId: updateHandoffStatus
+      summary: Update Handoff Status
+      description: |
+        Callback endpoint for human agent systems to report handoff status.
+        Use this to track when agents accept handoffs, complete them, or if they fail.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - handoff_id
+                - status
+              properties:
+                handoff_id:
+                  type: string
+                  description: The handoff identifier returned from start_transfer
+                  example: "handoff_session_abc123xyz_20260317143052"
+                status:
+                  type: string
+                  enum: [accepted, completed, failed, timeout]
+                  description: Current status of the handoff
+                  example: completed
+                agent_id:
+                  type: string
+                  description: Human agent identifier who handled the handoff
+                  example: "agent_jane_doe"
+                notes:
+                  type: string
+                  description: Optional notes about the handoff outcome
+                  example: "Password reset completed successfully"
+      responses:
+        '200':
+          description: Status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: "Handoff status updated: completed"
+                  handoff_id:
+                    type: string
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [error]
+        message:
+          type: string
+          description: Human-readable error message
