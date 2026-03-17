@@ -218,7 +218,8 @@ twilio_handoff/
 │   ├── agent_instructions.md  # Agent instruction templates
 │   └── agent_instructions.xml # XML-formatted instructions
 ├── docs/
-│   └── VOICE_HANDOFF_ARCHITECTURE.md  # Future voice implementation
+│   ├── VOICE_HANDOFF_ARCHITECTURE.md  # Future voice implementation
+│   └── CXAS_SCRAPI_GUIDE.md           # SCRAPI library documentation
 ├── SETUP_GUIDE.md        # Detailed setup instructions
 └── README.md             # This file
 ```
